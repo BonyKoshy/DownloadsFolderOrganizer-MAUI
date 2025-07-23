@@ -1,7 +1,7 @@
 ﻿<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="DownloadsFolderOrganizer.MainPage"
-             BackgroundColor="#E4F2FC"
+             BackgroundColor="#202020"
              Padding="20">
 
     <ScrollView>
@@ -9,83 +9,97 @@
         
 <VerticalStackLayout Spacing="20">
 
-            <!-- Hamburger menu -->
-            <Image Source="hamburger.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="Start" />
+            <!-- colour mode switch -->
+            <Image Source="hamburger.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="End" />
 
             <!-- Title -->  
             <Label Text="ORGANIZE IT!"
-                   FontSize="28"
+                   FontSize="30"
                    FontAttributes="Bold"
                    HorizontalOptions="Center"
-                   TextColor="#00396c" />
+                   TextColor="#ffffff" />
 
             <!-- Drag and Drop Box -->
-            <Frame CornerRadius="20"
-                   BackgroundColor="#B6DCF6"
-                   BorderColor="#001341"
-                   Padding="30"
-                   HasShadow="False">
+            <Frame CornerRadius="10"
+       BackgroundColor="#2e2e2e"
+       BorderColor="#5e5e5e"
+       Padding="30"
+       HasShadow="False">
+
+                <Frame.GestureRecognizers>
+                    <DropGestureRecognizer AllowDrop="True"
+                               Drop="OnFileDropped"
+                               DragOver="OnDragOver"/>
+                </Frame.GestureRecognizers>
 
                 <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="10">
                     <Image Source="drag_icon.png" HeightRequest="40" />
                     <Label Text="Drag &amp; Drop"
-                           TextColor="#001341"
-                           FontSize="16"
-                           HorizontalOptions="Center"/>
+               TextColor="#ffffff"
+               FontSize="16"
+               HorizontalOptions="Center"/>
                     <Button Text="Browse"
-                            BackgroundColor="#E4F2FC"
-                            TextColor="#001341"
-                            WidthRequest="100"
-                            HeightRequest="40"
-                            Clicked="OnBrowseClicked"/>
+                BackgroundColor="#2e2e2e"
+                BorderColor="#5e5e5e"
+                BorderWidth="1.5"
+                TextColor="#ffffff"
+                CornerRadius="10"       
+                WidthRequest="120"
+                HeightRequest="40"
+                Clicked="OnBrowseClicked"/>
                 </VerticalStackLayout>
             </Frame>
 
+
             <!-- Organize + Undo Buttons -->
-            <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+            <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
                 <Button Text="Organize"
                         x:Name="organizeButton"
-                        HeightRequest="45"
-                        WidthRequest="200"
-                        BackgroundColor="#00396c"
+                        FontSize="16"
+                        HeightRequest="50"
+                        WidthRequest="330"
+                        BackgroundColor="#357EC7"
                         TextColor="#E4F2FC"
-                        CornerRadius="25"
+                        CornerRadius="10"
                         Clicked="OnOrganizeClicked" />
                 <ImageButton Source="undo_icon.png"
-                             HeightRequest="40"
-                             WidthRequest="40"
-                             BackgroundColor="#B6DCF6" 
-                             CornerRadius="20"
-                             Padding="5"
+                             HeightRequest="50"
+                             WidthRequest="50"
+                             BackgroundColor="#2e2e2e" 
+                             BorderColor="#5e5e5e"
+                             BorderWidth="1.5"
+                             CornerRadius="10"
+                             Padding="12"
                              Clicked="OnUndoClicked"/>
             </HorizontalStackLayout>
 
             <!-- Progress Bar -->
             <VerticalStackLayout>
                 <Label Text="Progress:"
-                       TextColor="#001341"
+                       TextColor="#ffffff"
                        FontSize="14"/>
                 <ProgressBar x:Name="progressBar"
                              Progress="0"
-                             HeightRequest="8"
-                             BackgroundColor="#E4F2FC"
-                             ProgressColor="#001341"/>
+                             HeightRequest="15"
+                             BackgroundColor="#5e5e5e"
+                             ProgressColor="#357EC7"/>
             </VerticalStackLayout>
 
             <!-- Action Log Box -->
-            <Frame CornerRadius="20"
-                   BackgroundColor="#001341"
-                   HasShadow="True"
-                   HeightRequest="200">
-                <ScrollView>
+            <Frame CornerRadius="10"
+       BackgroundColor="#2e2e2e"
+       HasShadow="True"
+       HeightRequest="200">
+                <ScrollView x:Name="logScrollView">
                     <Label x:Name="logLabel"
-                           Text=">> Ready to organize..."
-                           FontSize="14"
-                           FontFamily="Courier New"
-                           TextColor="#B6DCF6"
-                           Padding="10"/>
+               Text=">> Ready to organize..."
+               FontSize="10"
+               FontFamily="Courier New"
+               TextColor="#ffffff"
+               Padding="1"/>
                 </ScrollView>
             </Frame>
+
 
         </VerticalStackLayout>
     </ScrollView>
