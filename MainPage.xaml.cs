@@ -42,7 +42,7 @@ namespace DownloadsFolderOrganizer
             InitializeApp();
         }
 
-        private async void InitializeApp()
+        private void InitializeApp()
         {
             try
             {
@@ -215,16 +215,21 @@ namespace DownloadsFolderOrganizer
             {
                 if (!string.IsNullOrEmpty(selectedFolderPath) && Directory.Exists(selectedFolderPath))
                 {
-                    var files = Directory.GetFiles(selectedFolderPath);
-                    LogAction($"Found {files.Length} files to organize.");
-
-                    if (files.Length > 0)
+                    // Run file IO and grouping on a background thread
+                    var result = await Task.Run(() =>
                     {
-                        var typeBreakdown = files
+                        var files = Directory.GetFiles(selectedFolderPath);
+                        var breakdown = files
                             .GroupBy(f => GetFileCategory(Path.GetExtension(f).ToLower()))
                             .ToDictionary(g => g.Key, g => g.Count());
+                        return (files.Length, breakdown);
+                    });
 
-                        foreach (var type in typeBreakdown.OrderByDescending(x => x.Value))
+                    LogAction($"Found {result.Item1} files to organize.");
+
+                    if (result.Item1 > 0)
+                    {
+                        foreach (var type in result.breakdown.OrderByDescending(x => x.Value))
                         {
                             LogAction($"   • {type.Key}: {type.Value} files");
                         }
@@ -390,7 +395,7 @@ namespace DownloadsFolderOrganizer
             try
             {
                 undoButton.IsEnabled = false;
-                undoButton.Text = "Undoing...";
+                LogAction("Undoing files...");
 
                 int successful = 0;
                 int failed = 0;
@@ -401,7 +406,6 @@ namespace DownloadsFolderOrganizer
                     {
                         if (File.Exists(source))
                         {
-                            // Ensure the original directory exists
                             var originalDir = Path.GetDirectoryName(original);
                             if (!string.IsNullOrEmpty(originalDir) && !Directory.Exists(originalDir))
                             {
@@ -439,9 +443,9 @@ namespace DownloadsFolderOrganizer
             finally
             {
                 undoButton.IsEnabled = movedFiles.Count > 0;
-                undoButton.Text = "Undo";
             }
         }
+
 
         private async Task CleanupEmptyFolders()
         {
@@ -450,15 +454,18 @@ namespace DownloadsFolderOrganizer
                 if (string.IsNullOrEmpty(selectedFolderPath) || !Directory.Exists(selectedFolderPath))
                     return;
 
-                foreach (var category in FileCategories.Keys)
+                await Task.Run(() =>
                 {
-                    string categoryPath = Path.Combine(selectedFolderPath, category);
-                    if (Directory.Exists(categoryPath) && !Directory.EnumerateFileSystemEntries(categoryPath).Any())
+                    foreach (var category in FileCategories.Keys)
                     {
-                        Directory.Delete(categoryPath);
-                        LogAction($"Removed empty folder: {category}");
+                        string categoryPath = Path.Combine(selectedFolderPath, category);
+                        if (Directory.Exists(categoryPath) && !Directory.EnumerateFileSystemEntries(categoryPath).Any())
+                        {
+                            Directory.Delete(categoryPath);
+                            LogAction($"Removed empty folder: {category}");
+                        }
                     }
-                }
+                });
             }
             catch (Exception ex)
             {
@@ -505,7 +512,7 @@ namespace DownloadsFolderOrganizer
             });
         }
 
-        private async void OnClearLogClicked(object sender, EventArgs e)
+        private void OnClearLogClicked(object sender, EventArgs e)
         {
             if (logLabel != null)
             {

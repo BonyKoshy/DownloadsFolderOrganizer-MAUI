@@ -22,15 +22,14 @@
                    HasShadow="False">
 
                 <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="15">
-                    <Label Text="📁"
-                           FontSize="40"
-                           HorizontalOptions="Center"/>
+                    <Image Source="logo.png" HeightRequest="50" WidthRequest="50" HorizontalOptions="Center" />
+                    
                     <Label Text="Select Folder to Organize"
                            TextColor="#ffffff"
                            FontSize="16"
                            HorizontalOptions="Center"/>
 
-                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                    <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
                         <Button Text="Browse Folder"
                                 BackgroundColor="#357EC7"
                                 TextColor="#ffffff"
@@ -39,13 +38,13 @@
                                 HeightRequest="40"
                                 Clicked="OnBrowseClicked"/>
 
-                        <Button Text="Downloads"
+                        <ImageButton Source="quickaccess.png"
                                 BackgroundColor="#2e2e2e"
                                 BorderColor="#5e5e5e"
+                                Padding="5"
                                 BorderWidth="1.5"
-                                TextColor="#ffffff"
                                 CornerRadius="10"       
-                                WidthRequest="100"
+                                WidthRequest="50"
                                 HeightRequest="40"
                                 Clicked="OnQuickDownloadsClicked"/>
                     </HorizontalStackLayout>
@@ -66,21 +65,20 @@
                         x:Name="organizeButton"
                         FontSize="16"
                         HeightRequest="50"
-                        WidthRequest="280"
+                        WidthRequest="330"
                         BackgroundColor="#357EC7"
                         TextColor="#E4F2FC"
                         CornerRadius="10"
                         Clicked="OnOrganizeClicked" />
 
-                <Button Text="Undo"
+                <ImageButton Source="undo_icon.png"
                         x:Name="undoButton"
-                        FontSize="14"
                         HeightRequest="50"
-                        WidthRequest="80"
+                        WidthRequest="50"
                         BackgroundColor="#2e2e2e" 
                         BorderColor="#5e5e5e"
+                        Padding="10"
                         BorderWidth="1.5"
-                        TextColor="#ffffff"
                         CornerRadius="10"
                         Clicked="OnUndoClicked"/>
             </HorizontalStackLayout>
@@ -103,17 +101,14 @@
                    HasShadow="True"
                    HeightRequest="250">
                 <VerticalStackLayout>
-                    <HorizontalStackLayout HorizontalOptions="Center" Margin="0,0,0,10">
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="220" Margin="0,0,0,10">
                         <Label Text="Activity Log"
                                TextColor="#ffffff"
                                FontSize="14"
                                FontAttributes="Bold"/>
-                        <Button Text="Clear"
-                                FontSize="12"
-                                BackgroundColor="Transparent"
-                                TextColor="#aaaaaa"
-                                Padding="10,3"
-                                Margin="190,0"
+                        <ImageButton Source="clear.png"
+                                HeightRequest="25"
+                                WidthRequest="25"
                                 Clicked="OnClearLogClicked"/>
                     </HorizontalStackLayout>
 
