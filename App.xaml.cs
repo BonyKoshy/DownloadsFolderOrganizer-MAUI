@@ -39,7 +39,7 @@ public partial class App : Application
         appWindow.TitleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
         appWindow.TitleBar.ButtonForegroundColor = Microsoft.UI.Colors.White;
 
-        appWindow.Resize(new SizeInt32(550, 900));
+        appWindow.Resize(new SizeInt32(550, 1000));
         if (appWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.IsResizable = false;

@@ -5,51 +5,60 @@
              Padding="20">
 
     <ScrollView>
-        
-        
-<VerticalStackLayout Spacing="20">
+        <VerticalStackLayout Spacing="20">
 
-            <!-- colour mode switch -->
-            <Image Source="hamburger.png" HeightRequest="24" WidthRequest="24" HorizontalOptions="End" />
-
-            <!-- Title -->  
+            <!-- Title -->
             <Label Text="ORGANIZE IT!"
                    FontSize="30"
                    FontAttributes="Bold"
                    HorizontalOptions="Center"
                    TextColor="#ffffff" />
 
-            <!-- Drag and Drop Box -->
+            <!-- File Selection Box -->
             <Frame CornerRadius="10"
-       BackgroundColor="#2e2e2e"
-       BorderColor="#5e5e5e"
-       Padding="30"
-       HasShadow="False">
+                   BackgroundColor="#2e2e2e"
+                   BorderColor="#5e5e5e"
+                   Padding="30"
+                   HasShadow="False">
 
-                <Frame.GestureRecognizers>
-                    <DropGestureRecognizer AllowDrop="True"
-                               Drop="OnFileDropped"
-                               DragOver="OnDragOver"/>
-                </Frame.GestureRecognizers>
+                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="15">
+                    <Label Text="📁"
+                           FontSize="40"
+                           HorizontalOptions="Center"/>
+                    <Label Text="Select Folder to Organize"
+                           TextColor="#ffffff"
+                           FontSize="16"
+                           HorizontalOptions="Center"/>
 
-                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="10">
-                    <Image Source="drag_icon.png" HeightRequest="40" />
-                    <Label Text="Drag &amp; Drop"
-               TextColor="#ffffff"
-               FontSize="16"
-               HorizontalOptions="Center"/>
-                    <Button Text="Browse"
-                BackgroundColor="#2e2e2e"
-                BorderColor="#5e5e5e"
-                BorderWidth="1.5"
-                TextColor="#ffffff"
-                CornerRadius="10"       
-                WidthRequest="120"
-                HeightRequest="40"
-                Clicked="OnBrowseClicked"/>
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Button Text="Browse Folder"
+                                BackgroundColor="#357EC7"
+                                TextColor="#ffffff"
+                                CornerRadius="10"       
+                                WidthRequest="140"
+                                HeightRequest="40"
+                                Clicked="OnBrowseClicked"/>
+
+                        <Button Text="Downloads"
+                                BackgroundColor="#2e2e2e"
+                                BorderColor="#5e5e5e"
+                                BorderWidth="1.5"
+                                TextColor="#ffffff"
+                                CornerRadius="10"       
+                                WidthRequest="100"
+                                HeightRequest="40"
+                                Clicked="OnQuickDownloadsClicked"/>
+                    </HorizontalStackLayout>
+
+                    <!-- Selected folder display -->
+                    <Label x:Name="selectedFolderLabel"
+                           Text=""
+                           TextColor="#aaaaaa"
+                           FontSize="12"
+                           HorizontalOptions="Center"
+                           LineBreakMode="MiddleTruncation"/>
                 </VerticalStackLayout>
             </Frame>
-
 
             <!-- Organize + Undo Buttons -->
             <HorizontalStackLayout Spacing="5" HorizontalOptions="Center">
@@ -57,20 +66,23 @@
                         x:Name="organizeButton"
                         FontSize="16"
                         HeightRequest="50"
-                        WidthRequest="330"
+                        WidthRequest="280"
                         BackgroundColor="#357EC7"
                         TextColor="#E4F2FC"
                         CornerRadius="10"
                         Clicked="OnOrganizeClicked" />
-                <ImageButton Source="undo_icon.png"
-                             HeightRequest="50"
-                             WidthRequest="50"
-                             BackgroundColor="#2e2e2e" 
-                             BorderColor="#5e5e5e"
-                             BorderWidth="1.5"
-                             CornerRadius="10"
-                             Padding="12"
-                             Clicked="OnUndoClicked"/>
+
+                <Button Text="Undo"
+                        x:Name="undoButton"
+                        FontSize="14"
+                        HeightRequest="50"
+                        WidthRequest="80"
+                        BackgroundColor="#2e2e2e" 
+                        BorderColor="#5e5e5e"
+                        BorderWidth="1.5"
+                        TextColor="#ffffff"
+                        CornerRadius="10"
+                        Clicked="OnUndoClicked"/>
             </HorizontalStackLayout>
 
             <!-- Progress Bar -->
@@ -87,19 +99,34 @@
 
             <!-- Action Log Box -->
             <Frame CornerRadius="10"
-       BackgroundColor="#2e2e2e"
-       HasShadow="True"
-       HeightRequest="200">
-                <ScrollView x:Name="logScrollView">
-                    <Label x:Name="logLabel"
-               Text=">> Ready to organize..."
-               FontSize="10"
-               FontFamily="Courier New"
-               TextColor="#ffffff"
-               Padding="1"/>
-                </ScrollView>
-            </Frame>
+                   BackgroundColor="#2e2e2e"
+                   HasShadow="True"
+                   HeightRequest="250">
+                <VerticalStackLayout>
+                    <HorizontalStackLayout HorizontalOptions="Center" Margin="0,0,0,10">
+                        <Label Text="Activity Log"
+                               TextColor="#ffffff"
+                               FontSize="14"
+                               FontAttributes="Bold"/>
+                        <Button Text="Clear"
+                                FontSize="12"
+                                BackgroundColor="Transparent"
+                                TextColor="#aaaaaa"
+                                Padding="10,3"
+                                Margin="190,0"
+                                Clicked="OnClearLogClicked"/>
+                    </HorizontalStackLayout>
 
+                    <ScrollView x:Name="logScrollView">
+                        <Label x:Name="logLabel"
+                               Text=">> Ready to organize..."
+                               FontSize="11"
+                               FontFamily="Courier New"
+                               TextColor="#ffffff"
+                               Padding="5"/>
+                    </ScrollView>
+                </VerticalStackLayout>
+            </Frame>
 
         </VerticalStackLayout>
     </ScrollView>

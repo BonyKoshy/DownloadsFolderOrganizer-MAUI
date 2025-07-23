@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using MauiApp = Microsoft.Maui.Controls.Application;
 
 #if WINDOWS
-using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using Windows.Storage.Pickers;
@@ -27,13 +26,13 @@ namespace DownloadsFolderOrganizer
         // Enhanced file categories with more extensions
         private readonly Dictionary<string, List<string>> FileCategories = new()
         {
-            ["Images"] = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp", ".svg", ".ico", ".raw"],
-            ["Documents"] = [".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls", ".pptx", ".ppt", ".rtf", ".odt", ".ods", ".odp"],
-            ["Videos"] = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp"],
-            ["Music"] = [".mp3", ".wav", ".aac", ".flac", ".ogg", ".wma", ".m4a"],
-            ["Archives"] = [".zip", ".rar", ".tar", ".gz", ".7z", ".bz2", ".xz"],
-            ["Code"] = [".py", ".js", ".html", ".css", ".java", ".cpp", ".c", ".cs", ".php", ".rb", ".go", ".ts"],
-            ["Executables"] = [".exe", ".msi", ".deb", ".rpm", ".dmg", ".pkg", ".apk"],
+            ["Images"] = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp", ".svg", ".ico", ".raw", ".heic", ".heif"],
+            ["Documents"] = [".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls", ".pptx", ".ppt", ".rtf", ".odt", ".ods", ".odp", ".csv"],
+            ["Videos"] = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".mts", ".m2ts"],
+            ["Music"] = [".mp3", ".wav", ".aac", ".flac", ".ogg", ".wma", ".m4a", ".opus"],
+            ["Archives"] = [".zip", ".rar", ".tar", ".gz", ".7z", ".bz2", ".xz", ".tar.gz"],
+            ["Code"] = [".py", ".js", ".html", ".css", ".java", ".cpp", ".c", ".cs", ".php", ".rb", ".go", ".ts", ".json", ".xml"],
+            ["Executables"] = [".exe", ".msi", ".deb", ".rpm", ".dmg", ".pkg", ".apk", ".app"],
             ["Others"] = []
         };
 
@@ -47,50 +46,76 @@ namespace DownloadsFolderOrganizer
         {
             try
             {
-                // Request permissions on startup for mobile platforms
-                await RequestPermissionsAsync();
-                LogAction(">> Downloads Folder Organizer initialized successfully.");
+                LogAction("Downloads Folder Organizer initialized successfully.");
+
+                // Update UI state
+                UpdateUIState();
             }
             catch (Exception ex)
             {
-                LogAction($">> Initialization error: {ex.Message}");
+                LogAction($"Initialization error: {ex.Message}");
             }
+        }
+
+        private void UpdateUIState()
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (selectedFolderLabel != null)
+                {
+                    if (string.IsNullOrEmpty(selectedFolderPath))
+                    {
+                        selectedFolderLabel.Text = "No folder selected";
+                        selectedFolderLabel.TextColor = Color.FromArgb("#aaaaaa");
+                    }
+                    else
+                    {
+                        selectedFolderLabel.Text = $"Selected: {Path.GetFileName(selectedFolderPath)}";
+                        selectedFolderLabel.TextColor = Color.FromArgb("#00ff00");
+                    }
+                }
+
+                if (undoButton != null)
+                {
+                    undoButton.IsEnabled = movedFiles.Count > 0;
+                    undoButton.Opacity = movedFiles.Count > 0 ? 1.0 : 0.5;
+                }
+
+                if (organizeButton != null)
+                {
+                    organizeButton.IsEnabled = !string.IsNullOrEmpty(selectedFolderPath);
+                    organizeButton.Opacity = !string.IsNullOrEmpty(selectedFolderPath) ? 1.0 : 0.7;
+                }
+            });
         }
 
         private async Task<bool> RequestPermissionsAsync()
         {
             try
             {
-                // Request storage permissions for mobile platforms
-                var status = await Permissions.RequestAsync<Permissions.StorageRead>();
-                if (status != PermissionStatus.Granted)
-                {
-                    LogAction(">> Storage read permission denied.");
-                    return false;
-                }
-
+#if ANDROID
+                var readStatus = await Permissions.RequestAsync<Permissions.StorageRead>();
                 var writeStatus = await Permissions.RequestAsync<Permissions.StorageWrite>();
-                if (writeStatus != PermissionStatus.Granted)
+
+                if (readStatus != PermissionStatus.Granted || writeStatus != PermissionStatus.Granted)
                 {
-                    LogAction(">> Storage write permission denied.");
+                    LogAction("Storage permissions denied.");
                     return false;
                 }
-
+#endif
                 return true;
             }
             catch (Exception ex)
             {
-                LogAction($">> Permission request error: {ex.Message}");
+                LogAction($"Permission request error: {ex.Message}");
                 return false;
             }
         }
 
-        // Cross-platform file selection method
         private async void OnBrowseClicked(object sender, EventArgs e)
         {
             try
             {
-                // Check permissions first
                 if (!await RequestPermissionsAsync())
                 {
                     await DisplayAlert("Permission Required", "Storage permission is required to organize files.", "OK");
@@ -102,10 +127,11 @@ namespace DownloadsFolderOrganizer
 #else
                 await SelectFolderCrossPlatform();
 #endif
+                UpdateUIState();
             }
             catch (Exception ex)
             {
-                LogAction($">> Browse error: {ex.Message}");
+                LogAction($"Browse error: {ex.Message}");
                 await DisplayAlert("Error", $"Failed to browse files: {ex.Message}", "OK");
             }
         }
@@ -119,7 +145,6 @@ namespace DownloadsFolderOrganizer
                 picker.SuggestedStartLocation = PickerLocationId.Downloads;
                 picker.FileTypeFilter.Add("*");
 
-                // Get the current window handle
                 var window = (MauiApp.Current?.Windows?.FirstOrDefault()?.Handler?.PlatformView as Microsoft.UI.Xaml.Window);
                 if (window != null)
                 {
@@ -130,14 +155,14 @@ namespace DownloadsFolderOrganizer
                     if (folder != null)
                     {
                         selectedFolderPath = folder.Path;
-                        LogAction($">> Selected folder: {selectedFolderPath}");
+                        LogAction($"Selected folder: {selectedFolderPath}");
                         await UpdateFileCount();
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogAction($">> Windows folder selection error: {ex.Message}");
+                LogAction($"Windows folder selection error: {ex.Message}");
             }
         }
 #endif
@@ -146,7 +171,6 @@ namespace DownloadsFolderOrganizer
         {
             try
             {
-                // For mobile platforms, use file picker to let user select a file from the desired folder
                 var customFileType = new FilePickerFileType(
                     new Dictionary<DevicePlatform, IEnumerable<string>>
                     {
@@ -167,21 +191,21 @@ namespace DownloadsFolderOrganizer
                 {
                     var filePath = result.FullPath;
                     var folder = Path.GetDirectoryName(filePath);
-                    if (!string.IsNullOrEmpty(folder))
+                    if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
                     {
                         selectedFolderPath = folder;
-                        LogAction($">> Selected folder: {selectedFolderPath}");
+                        LogAction($"Selected folder: {selectedFolderPath}");
                         await UpdateFileCount();
                     }
                     else
                     {
-                        LogAction(">> Error: Could not determine folder path.");
+                        LogAction("Error: Could not determine folder path.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogAction($">> Cross-platform folder selection error: {ex.Message}");
+                LogAction($"Cross-platform folder selection error: {ex.Message}");
             }
         }
 
@@ -192,22 +216,24 @@ namespace DownloadsFolderOrganizer
                 if (!string.IsNullOrEmpty(selectedFolderPath) && Directory.Exists(selectedFolderPath))
                 {
                     var files = Directory.GetFiles(selectedFolderPath);
-                    LogAction($">> Found {files.Length} files to organize.");
+                    LogAction($"Found {files.Length} files to organize.");
 
-                    // Show file type breakdown
-                    var typeBreakdown = files
-                        .GroupBy(f => GetFileCategory(Path.GetExtension(f).ToLower()))
-                        .ToDictionary(g => g.Key, g => g.Count());
-
-                    foreach (var type in typeBreakdown)
+                    if (files.Length > 0)
                     {
-                        LogAction($"   • {type.Key}: {type.Value} files");
+                        var typeBreakdown = files
+                            .GroupBy(f => GetFileCategory(Path.GetExtension(f).ToLower()))
+                            .ToDictionary(g => g.Key, g => g.Count());
+
+                        foreach (var type in typeBreakdown.OrderByDescending(x => x.Value))
+                        {
+                            LogAction($"   • {type.Key}: {type.Value} files");
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogAction($">> Error updating file count: {ex.Message}");
+                LogAction($"Error updating file count: {ex.Message}");
             }
         }
 
@@ -220,40 +246,49 @@ namespace DownloadsFolderOrganizer
         {
             if (string.IsNullOrWhiteSpace(selectedFolderPath))
             {
-                LogAction(">> Please select a folder first.");
+                LogAction("Please select a folder first.");
                 await DisplayAlert("No Folder Selected", "Please browse and select a folder to organize.", "OK");
                 return;
             }
 
             if (!Directory.Exists(selectedFolderPath))
             {
-                LogAction(">> Selected folder no longer exists.");
+                LogAction("Selected folder no longer exists.");
+                selectedFolderPath = string.Empty;
+                UpdateUIState();
                 await DisplayAlert("Folder Not Found", "The selected folder no longer exists.", "OK");
                 return;
             }
 
             try
             {
+                organizeButton.IsEnabled = false;
+                organizeButton.Text = "Organizing...";
+
                 var files = Directory.GetFiles(selectedFolderPath);
                 int total = files.Length;
 
                 if (total == 0)
                 {
-                    LogAction(">> No files to organize.");
+                    LogAction("No files to organize.");
                     await DisplayAlert("No Files", "No files found in the selected folder.", "OK");
                     return;
                 }
 
-                // Confirm organization
                 bool confirm = await DisplayAlert("Confirm Organization",
                     $"This will organize {total} files into category folders. Continue?",
                     "Yes", "No");
 
-                if (!confirm) return;
+                if (!confirm)
+                {
+                    organizeButton.IsEnabled = true;
+                    organizeButton.Text = "Organize";
+                    return;
+                }
 
                 movedFiles.Clear();
                 progressBar.Progress = 0;
-                LogAction($">> Starting organization of {total} files...");
+                LogAction($"Starting organization of {total} files...");
 
                 int current = 0;
                 int successful = 0;
@@ -270,13 +305,12 @@ namespace DownloadsFolderOrganizer
                         if (!Directory.Exists(destDir))
                         {
                             Directory.CreateDirectory(destDir);
-                            LogAction($">> Created folder: {category}");
+                            LogAction($"Created folder: {category}");
                         }
 
                         string fileName = Path.GetFileName(file);
                         string destPath = Path.Combine(destDir, fileName);
 
-                        // Handle duplicate files
                         if (File.Exists(destPath))
                         {
                             destPath = GetUniqueFilePath(destPath);
@@ -284,23 +318,21 @@ namespace DownloadsFolderOrganizer
 
                         File.Move(file, destPath);
                         movedFiles.Add((destPath, file));
-                        LogAction($">> {fileName} → {category}");
+                        LogAction($"{fileName} → {category}");
                         successful++;
                     }
                     catch (Exception ex)
                     {
-                        LogAction($">> Failed to move {Path.GetFileName(file)}: {ex.Message}");
+                        LogAction($"Failed to move {Path.GetFileName(file)}: {ex.Message}");
                         failed++;
                     }
 
                     current++;
                     progressBar.Progress = (double)current / total;
-
-                    // Allow UI to update
-                    await Task.Delay(50);
+                    await Task.Delay(10);
                 }
 
-                LogAction($">> Organization complete! {successful} files organized, {failed} failed.");
+                LogAction($"Organization complete! {successful} files organized, {failed} failed.");
 
                 if (successful > 0)
                 {
@@ -308,11 +340,18 @@ namespace DownloadsFolderOrganizer
                         $"Successfully organized {successful} files into category folders!",
                         "OK");
                 }
+
+                UpdateUIState();
             }
             catch (Exception ex)
             {
-                LogAction($">> Organization error: {ex.Message}");
+                LogAction($"Organization error: {ex.Message}");
                 await DisplayAlert("Error", $"An error occurred during organization: {ex.Message}", "OK");
+            }
+            finally
+            {
+                organizeButton.IsEnabled = true;
+                organizeButton.Text = "Organize";
             }
         }
 
@@ -338,8 +377,7 @@ namespace DownloadsFolderOrganizer
         {
             if (movedFiles.Count == 0)
             {
-                LogAction(">> Nothing to undo.");
-                await DisplayAlert("Nothing to Undo", "No recent organization to undo.", "OK");
+                LogAction("Nothing to undo.");
                 return;
             }
 
@@ -351,6 +389,9 @@ namespace DownloadsFolderOrganizer
 
             try
             {
+                undoButton.IsEnabled = false;
+                undoButton.Text = "Undoing...";
+
                 int successful = 0;
                 int failed = 0;
 
@@ -360,33 +401,45 @@ namespace DownloadsFolderOrganizer
                     {
                         if (File.Exists(source))
                         {
+                            // Ensure the original directory exists
+                            var originalDir = Path.GetDirectoryName(original);
+                            if (!string.IsNullOrEmpty(originalDir) && !Directory.Exists(originalDir))
+                            {
+                                Directory.CreateDirectory(originalDir);
+                            }
+
                             File.Move(source, original);
-                            LogAction($">> Restored: {Path.GetFileName(source)}");
+                            LogAction($"Restored: {Path.GetFileName(source)}");
                             successful++;
                         }
                         else
                         {
-                            LogAction($">> File not found for undo: {Path.GetFileName(source)}");
+                            LogAction($"File not found for undo: {Path.GetFileName(source)}");
                             failed++;
                         }
                     }
                     catch (Exception ex)
                     {
-                        LogAction($">> Undo failed for {Path.GetFileName(source)}: {ex.Message}");
+                        LogAction($"Undo failed for {Path.GetFileName(source)}: {ex.Message}");
                         failed++;
                     }
                 }
 
                 movedFiles.Clear();
-                LogAction($">> Undo complete! {successful} files restored, {failed} failed.");
+                LogAction($"Undo complete! {successful} files restored, {failed} failed.");
 
-                // Clean up empty category folders
                 await CleanupEmptyFolders();
+                UpdateUIState();
             }
             catch (Exception ex)
             {
-                LogAction($">> Undo error: {ex.Message}");
+                LogAction($"Undo error: {ex.Message}");
                 await DisplayAlert("Error", $"An error occurred during undo: {ex.Message}", "OK");
+            }
+            finally
+            {
+                undoButton.IsEnabled = movedFiles.Count > 0;
+                undoButton.Text = "Undo";
             }
         }
 
@@ -403,13 +456,13 @@ namespace DownloadsFolderOrganizer
                     if (Directory.Exists(categoryPath) && !Directory.EnumerateFileSystemEntries(categoryPath).Any())
                     {
                         Directory.Delete(categoryPath);
-                        LogAction($">> Removed empty folder: {category}");
+                        LogAction($"Removed empty folder: {category}");
                     }
                 }
             }
             catch (Exception ex)
             {
-                LogAction($">> Cleanup error: {ex.Message}");
+                LogAction($"Cleanup error: {ex.Message}");
             }
         }
 
@@ -421,11 +474,17 @@ namespace DownloadsFolderOrganizer
                 {
                     if (logLabel != null)
                     {
-                        // Add timestamp to log messages
                         string timestamped = $"[{DateTime.Now:HH:mm:ss}] {message}";
-                        logLabel.Text += $"\n{timestamped}";
 
-                        // Limit log length to prevent memory issues
+                        if (string.IsNullOrEmpty(logLabel.Text) || logLabel.Text == ">> Ready to organize...")
+                        {
+                            logLabel.Text = timestamped;
+                        }
+                        else
+                        {
+                            logLabel.Text += $"\n{timestamped}";
+                        }
+
                         var lines = logLabel.Text.Split('\n');
                         if (lines.Length > 100)
                         {
@@ -434,8 +493,8 @@ namespace DownloadsFolderOrganizer
 
                         if (logScrollView != null)
                         {
-                            await Task.Delay(10); // Small delay to ensure text is updated
-                            await logScrollView.ScrollToAsync(logLabel, ScrollToPosition.End, true);
+                            await Task.Delay(10);
+                            await logScrollView.ScrollToAsync(logLabel, ScrollToPosition.End, false);
                         }
                     }
                 }
@@ -450,67 +509,10 @@ namespace DownloadsFolderOrganizer
         {
             if (logLabel != null)
             {
-                logLabel.Text = ">> Log cleared.";
-                LogAction("Downloads Folder Organizer ready.");
+                logLabel.Text = ">> Ready to organize...";
             }
         }
 
-#if WINDOWS
-        [System.Runtime.InteropServices.LibraryImport("user32.dll")]
-        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
-        private static partial bool ShowWindow(System.IntPtr hWnd, int nCmdShow);
-
-        private void OnMinimizeClicked(object sender, EventArgs e)
-        {
-            try
-            {
-                var window = (MauiApp.Current?.Windows?.FirstOrDefault()?.Handler?.PlatformView as Microsoft.UI.Xaml.Window);
-                if (window != null)
-                {
-                    System.IntPtr hWnd = WindowNative.GetWindowHandle(window);
-                    ShowWindow(hWnd, 6); // 6 = SW_MINIMIZE
-                }
-            }
-            catch (Exception ex)
-            {
-                LogAction($">> Minimize error: {ex.Message}");
-            }
-        }
-#else
-        private async void OnMinimizeClicked(object sender, EventArgs e)
-        {
-            // For non-Windows platforms, show a message
-            await DisplayAlert("Info", "Minimize function is only available on Windows.", "OK");
-        }
-#endif
-
-        private async void OnCloseClicked(object sender, EventArgs e)
-        {
-            try
-            {
-                bool confirm = await DisplayAlert("Confirm Exit",
-                    "Are you sure you want to close the application?",
-                    "Yes", "No");
-
-                if (confirm)
-                {
-#if WINDOWS
-                    MauiApp.Current?.Quit();
-#else
-                    // For other platforms, use the standard method
-                    System.Environment.Exit(0);
-#endif
-                }
-            }
-            catch (Exception ex)
-            {
-                LogAction($">> Close error: {ex.Message}");
-                // Fallback exit method
-                System.Environment.Exit(0);
-            }
-        }
-
-        // Method to get default downloads folder path for each platform
         private string GetDefaultDownloadsPath()
         {
             try
@@ -518,11 +520,12 @@ namespace DownloadsFolderOrganizer
 #if WINDOWS
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 #elif ANDROID
-                return Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryDownloads)?.AbsolutePath ?? "";
+                var downloadsPath = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryDownloads)?.AbsolutePath;
+                return downloadsPath ?? Path.Combine(Android.OS.Environment.ExternalStorageDirectory?.AbsolutePath ?? "", "Download");
 #elif IOS
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Downloads");
 #else
-                return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 #endif
             }
             catch
@@ -531,21 +534,28 @@ namespace DownloadsFolderOrganizer
             }
         }
 
-        // Quick access to downloads folder
         private async void OnQuickDownloadsClicked(object sender, EventArgs e)
         {
             try
             {
+                if (!await RequestPermissionsAsync())
+                {
+                    await DisplayAlert("Permission Required", "Storage permission is required to access downloads folder.", "OK");
+                    return;
+                }
+
                 string downloadsPath = GetDefaultDownloadsPath();
+
                 if (!string.IsNullOrEmpty(downloadsPath) && Directory.Exists(downloadsPath))
                 {
                     selectedFolderPath = downloadsPath;
-                    LogAction($">> Quick access: Downloads folder selected");
+                    LogAction($"Quick access: Downloads folder selected");
                     await UpdateFileCount();
+                    UpdateUIState();
                 }
                 else
                 {
-                    LogAction(">> Downloads folder not found. Please use Browse instead.");
+                    LogAction("Downloads folder not found. Please use Browse instead.");
                     await DisplayAlert("Downloads Not Found",
                         "Default downloads folder not found. Please use the Browse button to select a folder.",
                         "OK");
@@ -553,7 +563,8 @@ namespace DownloadsFolderOrganizer
             }
             catch (Exception ex)
             {
-                LogAction($">> Quick downloads error: {ex.Message}");
+                LogAction($"Quick downloads error: {ex.Message}");
+                await DisplayAlert("Error", $"Failed to access downloads folder: {ex.Message}", "OK");
             }
         }
     }
