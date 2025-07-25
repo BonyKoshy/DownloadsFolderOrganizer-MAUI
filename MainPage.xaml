@@ -65,7 +65,7 @@
                         x:Name="organizeButton"
                         FontSize="16"
                         HeightRequest="50"
-                        WidthRequest="330"
+                        WidthRequest="290"
                         BackgroundColor="#357EC7"
                         TextColor="#E4F2FC"
                         CornerRadius="10"
@@ -91,7 +91,7 @@
                 <ProgressBar x:Name="progressBar"
                              Progress="0"
                              HeightRequest="15"
-                             BackgroundColor="#5e5e5e"
+                             BackgroundColor="Transparent"
                              ProgressColor="#357EC7"/>
             </VerticalStackLayout>
 
@@ -101,7 +101,7 @@
                    HasShadow="True"
                    HeightRequest="250">
                 <VerticalStackLayout>
-                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="220" Margin="0,0,0,10">
+                    <HorizontalStackLayout HorizontalOptions="Center" Spacing="200" Margin="0,0,0,10">
                         <Label Text="Activity Log"
                                TextColor="#ffffff"
                                FontSize="14"

@@ -1,8 +1,6 @@
 ﻿using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Storage;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -42,12 +40,12 @@ namespace DownloadsFolderOrganizer
             InitializeApp();
         }
 
-        private void InitializeApp()
+        private async void InitializeApp()
         {
             try
             {
                 LogAction("Downloads Folder Organizer initialized successfully.");
-
+                
                 // Update UI state
                 UpdateUIState();
             }
@@ -94,14 +92,45 @@ namespace DownloadsFolderOrganizer
             try
             {
 #if ANDROID
-                var readStatus = await Permissions.RequestAsync<Permissions.StorageRead>();
-                var writeStatus = await Permissions.RequestAsync<Permissions.StorageWrite>();
+                // Check Android version for different permission requirements
+                var androidVersion = Android.OS.Build.VERSION.SdkInt;
+                LogAction($"Android API Level: {(int)androidVersion}");
 
-                if (readStatus != PermissionStatus.Granted || writeStatus != PermissionStatus.Granted)
+                if (androidVersion >= Android.OS.BuildVersionCodes.R) // Android 11+
                 {
-                    LogAction("Storage permissions denied.");
-                    return false;
+                    // For Android 11+, request multiple media permissions
+                    var readStatus = await Permissions.RequestAsync<Permissions.StorageRead>();
+                    var writeStatus = await Permissions.RequestAsync<Permissions.StorageWrite>();
+                    
+                    if (readStatus != PermissionStatus.Granted)
+                    {
+                        LogAction("Storage read permission denied.");
+                        await DisplayAlert("Permission Required", "Storage read permission is required to access files.", "OK");
+                        return false;
+                    }
+                    
+                    if (writeStatus != PermissionStatus.Granted)
+                    {
+                        LogAction("Storage write permission denied.");
+                        await DisplayAlert("Permission Required", "Storage write permission is required to organize files.", "OK");
+                        return false;
+                    }
                 }
+                else
+                {
+                    // For older Android versions
+                    var readStatus = await Permissions.RequestAsync<Permissions.StorageRead>();
+                    var writeStatus = await Permissions.RequestAsync<Permissions.StorageWrite>();
+                    
+                    if (readStatus != PermissionStatus.Granted || writeStatus != PermissionStatus.Granted)
+                    {
+                        LogAction("Storage permissions denied.");
+                        await DisplayAlert("Permission Required", "Storage permissions are required to organize files.", "OK");
+                        return false;
+                    }
+                }
+                
+                LogAction("Storage permissions granted.");
 #endif
                 return true;
             }
@@ -116,14 +145,18 @@ namespace DownloadsFolderOrganizer
         {
             try
             {
+                LogAction("Browse button clicked...");
+                
                 if (!await RequestPermissionsAsync())
                 {
-                    await DisplayAlert("Permission Required", "Storage permission is required to organize files.", "OK");
+                    LogAction("Permissions not granted, cannot browse files.");
                     return;
                 }
 
 #if WINDOWS
                 await SelectFolderWindows();
+#elif ANDROID
+                await SelectFolderAndroid();
 #else
                 await SelectFolderCrossPlatform();
 #endif
@@ -167,69 +200,22 @@ namespace DownloadsFolderOrganizer
         }
 #endif
 
-        private async Task SelectFolderCrossPlatform()
-        {
-            try
-            {
-                var customFileType = new FilePickerFileType(
-                    new Dictionary<DevicePlatform, IEnumerable<string>>
-                    {
-                        { DevicePlatform.Android, new[] { "*/*" } },
-                        { DevicePlatform.iOS, new[] { "public.item" } },
-                        { DevicePlatform.WinUI, new[] { "*" } },
-                        { DevicePlatform.MacCatalyst, new[] { "public.item" } }
-                    });
-
-                var options = new PickOptions
-                {
-                    PickerTitle = "Select any file from the folder you want to organize",
-                    FileTypes = customFileType
-                };
-
-                var result = await FilePicker.Default.PickAsync(options);
-                if (result != null)
-                {
-                    var filePath = result.FullPath;
-                    var folder = Path.GetDirectoryName(filePath);
-                    if (!string.IsNullOrEmpty(folder) && Directory.Exists(folder))
-                    {
-                        selectedFolderPath = folder;
-                        LogAction($"Selected folder: {selectedFolderPath}");
-                        await UpdateFileCount();
-                    }
-                    else
-                    {
-                        LogAction("Error: Could not determine folder path.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogAction($"Cross-platform folder selection error: {ex.Message}");
-            }
-        }
-
         private async Task UpdateFileCount()
         {
             try
             {
                 if (!string.IsNullOrEmpty(selectedFolderPath) && Directory.Exists(selectedFolderPath))
                 {
-                    // Run file IO and grouping on a background thread
-                    var result = await Task.Run(() =>
+                    var files = Directory.GetFiles(selectedFolderPath);
+                    LogAction($"Found {files.Length} files to organize.");
+
+                    if (files.Length > 0)
                     {
-                        var files = Directory.GetFiles(selectedFolderPath);
-                        var breakdown = files
+                        var typeBreakdown = files
                             .GroupBy(f => GetFileCategory(Path.GetExtension(f).ToLower()))
                             .ToDictionary(g => g.Key, g => g.Count());
-                        return (files.Length, breakdown);
-                    });
 
-                    LogAction($"Found {result.Item1} files to organize.");
-
-                    if (result.Item1 > 0)
-                    {
-                        foreach (var type in result.breakdown.OrderByDescending(x => x.Value))
+                        foreach (var type in typeBreakdown.OrderByDescending(x => x.Value))
                         {
                             LogAction($"   • {type.Key}: {type.Value} files");
                         }
@@ -284,7 +270,7 @@ namespace DownloadsFolderOrganizer
                     $"This will organize {total} files into category folders. Continue?",
                     "Yes", "No");
 
-                if (!confirm)
+                if (!confirm) 
                 {
                     organizeButton.IsEnabled = true;
                     organizeButton.Text = "Organize";
@@ -446,7 +432,6 @@ namespace DownloadsFolderOrganizer
             }
         }
 
-
         private async Task CleanupEmptyFolders()
         {
             try
@@ -454,18 +439,15 @@ namespace DownloadsFolderOrganizer
                 if (string.IsNullOrEmpty(selectedFolderPath) || !Directory.Exists(selectedFolderPath))
                     return;
 
-                await Task.Run(() =>
+                foreach (var category in FileCategories.Keys)
                 {
-                    foreach (var category in FileCategories.Keys)
+                    string categoryPath = Path.Combine(selectedFolderPath, category);
+                    if (Directory.Exists(categoryPath) && !Directory.EnumerateFileSystemEntries(categoryPath).Any())
                     {
-                        string categoryPath = Path.Combine(selectedFolderPath, category);
-                        if (Directory.Exists(categoryPath) && !Directory.EnumerateFileSystemEntries(categoryPath).Any())
-                        {
-                            Directory.Delete(categoryPath);
-                            LogAction($"Removed empty folder: {category}");
-                        }
+                        Directory.Delete(categoryPath);
+                        LogAction($"Removed empty folder: {category}");
                     }
-                });
+                }
             }
             catch (Exception ex)
             {
@@ -482,7 +464,7 @@ namespace DownloadsFolderOrganizer
                     if (logLabel != null)
                     {
                         string timestamped = $"[{DateTime.Now:HH:mm:ss}] {message}";
-
+                        
                         if (string.IsNullOrEmpty(logLabel.Text) || logLabel.Text == ">> Ready to organize...")
                         {
                             logLabel.Text = timestamped;
@@ -512,7 +494,7 @@ namespace DownloadsFolderOrganizer
             });
         }
 
-        private void OnClearLogClicked(object sender, EventArgs e)
+        private async void OnClearLogClicked(object sender, EventArgs e)
         {
             if (logLabel != null)
             {
@@ -526,17 +508,11 @@ namespace DownloadsFolderOrganizer
             {
 #if WINDOWS
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-#elif ANDROID
-                var downloadsPath = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryDownloads)?.AbsolutePath;
-                return downloadsPath ?? Path.Combine(Android.OS.Environment.ExternalStorageDirectory?.AbsolutePath ?? "", "Download");
-#elif IOS
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Downloads");
-#else
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 #endif
             }
-            catch
+            catch (Exception ex)
             {
+                LogAction($"Error getting downloads path: {ex.Message}");
                 return "";
             }
         }
@@ -545,14 +521,8 @@ namespace DownloadsFolderOrganizer
         {
             try
             {
-                if (!await RequestPermissionsAsync())
-                {
-                    await DisplayAlert("Permission Required", "Storage permission is required to access downloads folder.", "OK");
-                    return;
-                }
-
                 string downloadsPath = GetDefaultDownloadsPath();
-
+                
                 if (!string.IsNullOrEmpty(downloadsPath) && Directory.Exists(downloadsPath))
                 {
                     selectedFolderPath = downloadsPath;
