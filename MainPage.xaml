@@ -16,7 +16,7 @@
 
             <!-- File Selection Box -->
             <Frame CornerRadius="10"
-                   BackgroundColor="#2e2e2e"
+                   BackgroundColor="#1c1c1c"
                    BorderColor="#5e5e5e"
                    Padding="30"
                    HasShadow="False">
@@ -65,7 +65,7 @@
                         x:Name="organizeButton"
                         FontSize="16"
                         HeightRequest="50"
-                        WidthRequest="290"
+                        WidthRequest="330"
                         BackgroundColor="#357EC7"
                         TextColor="#E4F2FC"
                         CornerRadius="10"

@@ -1,6 +1,6 @@
-﻿using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Storage;
+﻿using Microsoft.Maui.Controls;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -24,14 +24,14 @@ namespace DownloadsFolderOrganizer
         // Enhanced file categories with more extensions
         private readonly Dictionary<string, List<string>> FileCategories = new()
         {
-            ["Images"] = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp", ".svg", ".ico", ".raw", ".heic", ".heif"],
-            ["Documents"] = [".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls", ".pptx", ".ppt", ".rtf", ".odt", ".ods", ".odp", ".csv"],
-            ["Videos"] = [".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".mts", ".m2ts"],
-            ["Music"] = [".mp3", ".wav", ".aac", ".flac", ".ogg", ".wma", ".m4a", ".opus"],
-            ["Archives"] = [".zip", ".rar", ".tar", ".gz", ".7z", ".bz2", ".xz", ".tar.gz"],
-            ["Code"] = [".py", ".js", ".html", ".css", ".java", ".cpp", ".c", ".cs", ".php", ".rb", ".go", ".ts", ".json", ".xml"],
-            ["Executables"] = [".exe", ".msi", ".deb", ".rpm", ".dmg", ".pkg", ".apk", ".app"],
-            ["Others"] = []
+            { "Images", new List<string> { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp", ".svg", ".ico", ".raw", ".heic", ".heif" } },
+            { "Documents", new List<string> { ".pdf", ".docx", ".doc", ".txt", ".xlsx", ".xls", ".pptx", ".ppt", ".rtf", ".odt", ".ods", ".odp", ".csv" } },
+            { "Videos", new List<string> { ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv", ".webm", ".m4v", ".3gp", ".mts", ".m2ts" } },
+            { "Music", new List<string> { ".mp3", ".wav", ".aac", ".flac", ".ogg", ".wma", ".m4a", ".opus" } },
+            { "Archives", new List<string> { ".zip", ".rar", ".tar", ".gz", ".7z", ".bz2", ".xz", ".tar.gz" } },
+            { "Code", new List<string> { ".py", ".js", ".html", ".css", ".java", ".cpp", ".c", ".cs", ".php", ".rb", ".go", ".ts", ".json", ".xml" } },
+            { "Executables", new List<string> { ".exe", ".msi", ".deb", ".rpm", ".dmg", ".pkg", ".apk", ".app" } },
+            { "Others", new List<string>() }
         };
 
         public MainPage()
@@ -40,13 +40,12 @@ namespace DownloadsFolderOrganizer
             InitializeApp();
         }
 
-        private async void InitializeApp()
+        // CS1998: Changed from async Task to void as it has no awaitable operations.
+        private void InitializeApp()
         {
             try
             {
                 LogAction("Downloads Folder Organizer initialized successfully.");
-                
-                // Update UI state
                 UpdateUIState();
             }
             catch (Exception ex)
@@ -87,78 +86,20 @@ namespace DownloadsFolderOrganizer
             });
         }
 
-        private async Task<bool> RequestPermissionsAsync()
-        {
-            try
-            {
-#if ANDROID
-                // Check Android version for different permission requirements
-                var androidVersion = Android.OS.Build.VERSION.SdkInt;
-                LogAction($"Android API Level: {(int)androidVersion}");
-
-                if (androidVersion >= Android.OS.BuildVersionCodes.R) // Android 11+
-                {
-                    // For Android 11+, request multiple media permissions
-                    var readStatus = await Permissions.RequestAsync<Permissions.StorageRead>();
-                    var writeStatus = await Permissions.RequestAsync<Permissions.StorageWrite>();
-                    
-                    if (readStatus != PermissionStatus.Granted)
-                    {
-                        LogAction("Storage read permission denied.");
-                        await DisplayAlert("Permission Required", "Storage read permission is required to access files.", "OK");
-                        return false;
-                    }
-                    
-                    if (writeStatus != PermissionStatus.Granted)
-                    {
-                        LogAction("Storage write permission denied.");
-                        await DisplayAlert("Permission Required", "Storage write permission is required to organize files.", "OK");
-                        return false;
-                    }
-                }
-                else
-                {
-                    // For older Android versions
-                    var readStatus = await Permissions.RequestAsync<Permissions.StorageRead>();
-                    var writeStatus = await Permissions.RequestAsync<Permissions.StorageWrite>();
-                    
-                    if (readStatus != PermissionStatus.Granted || writeStatus != PermissionStatus.Granted)
-                    {
-                        LogAction("Storage permissions denied.");
-                        await DisplayAlert("Permission Required", "Storage permissions are required to organize files.", "OK");
-                        return false;
-                    }
-                }
-                
-                LogAction("Storage permissions granted.");
-#endif
-                return true;
-            }
-            catch (Exception ex)
-            {
-                LogAction($"Permission request error: {ex.Message}");
-                return false;
-            }
-        }
+        // Removed RequestPermissionsAsync() entirely as it's not needed for Windows-only app.
 
         private async void OnBrowseClicked(object sender, EventArgs e)
         {
             try
             {
                 LogAction("Browse button clicked...");
-                
-                if (!await RequestPermissionsAsync())
-                {
-                    LogAction("Permissions not granted, cannot browse files.");
-                    return;
-                }
 
+                // Permission check removed as it's implied or handled differently on Windows.
 #if WINDOWS
                 await SelectFolderWindows();
-#elif ANDROID
-                await SelectFolderAndroid();
 #else
-                await SelectFolderCrossPlatform();
+                // This entire else block is effectively removed for Windows-only app.
+                // await SelectFolderCrossPlatform(); 
 #endif
                 UpdateUIState();
             }
@@ -200,25 +141,40 @@ namespace DownloadsFolderOrganizer
         }
 #endif
 
+        // Removed SelectFolderCrossPlatform() entirely for Windows-only app.
+
         private async Task UpdateFileCount()
         {
             try
             {
                 if (!string.IsNullOrEmpty(selectedFolderPath) && Directory.Exists(selectedFolderPath))
                 {
-                    var files = Directory.GetFiles(selectedFolderPath);
-                    LogAction($"Found {files.Length} files to organize.");
-
-                    if (files.Length > 0)
+                    // Run file IO and grouping on a background thread to avoid blocking the UI
+                    var result = await Task.Run(() =>
                     {
-                        var typeBreakdown = files
-                            .GroupBy(f => GetFileCategory(Path.GetExtension(f).ToLower()))
-                            .ToDictionary(g => g.Key, g => g.Count());
-
-                        foreach (var type in typeBreakdown.OrderByDescending(x => x.Value))
+                        var files = Directory.GetFiles(selectedFolderPath);
+                        var logLines = new List<string>
                         {
-                            LogAction($"   • {type.Key}: {type.Value} files");
+                            $"Found {files.Length} files to organize."
+                        };
+
+                        if (files.Length > 0)
+                        {
+                            var typeBreakdown = files
+                                .GroupBy(f => GetFileCategory(Path.GetExtension(f).ToLower()))
+                                .ToDictionary(g => g.Key, g => g.Count());
+
+                            foreach (var type in typeBreakdown.OrderByDescending(x => x.Value))
+                            {
+                                logLines.Add($"   • {type.Key}: {type.Value} files");
+                            }
                         }
+                        return logLines;
+                    });
+
+                    foreach (var line in result)
+                    {
+                        LogAction(line);
                     }
                 }
             }
@@ -228,9 +184,17 @@ namespace DownloadsFolderOrganizer
             }
         }
 
+        // CA1826: Replaced LINQ with foreach loop for potential efficiency gain.
         private string GetFileCategory(string extension)
         {
-            return FileCategories.FirstOrDefault(kv => kv.Value.Contains(extension)).Key ?? "Others";
+            foreach (var category in FileCategories)
+            {
+                if (category.Value.Contains(extension))
+                {
+                    return category.Key;
+                }
+            }
+            return "Others";
         }
 
         private async void OnOrganizeClicked(object sender, EventArgs e)
@@ -270,7 +234,7 @@ namespace DownloadsFolderOrganizer
                     $"This will organize {total} files into category folders. Continue?",
                     "Yes", "No");
 
-                if (!confirm) 
+                if (!confirm)
                 {
                     organizeButton.IsEnabled = true;
                     organizeButton.Text = "Organize";
@@ -346,7 +310,8 @@ namespace DownloadsFolderOrganizer
             }
         }
 
-        private string GetUniqueFilePath(string filePath)
+        // CA1822: Marked as static as it does not access instance data.
+        private static string GetUniqueFilePath(string filePath)
         {
             string directory = Path.GetDirectoryName(filePath) ?? "";
             string fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -439,15 +404,18 @@ namespace DownloadsFolderOrganizer
                 if (string.IsNullOrEmpty(selectedFolderPath) || !Directory.Exists(selectedFolderPath))
                     return;
 
-                foreach (var category in FileCategories.Keys)
+                await Task.Run(() =>
                 {
-                    string categoryPath = Path.Combine(selectedFolderPath, category);
-                    if (Directory.Exists(categoryPath) && !Directory.EnumerateFileSystemEntries(categoryPath).Any())
+                    foreach (var category in FileCategories.Keys)
                     {
-                        Directory.Delete(categoryPath);
-                        LogAction($"Removed empty folder: {category}");
+                        string categoryPath = Path.Combine(selectedFolderPath, category);
+                        if (Directory.Exists(categoryPath) && !Directory.EnumerateFileSystemEntries(categoryPath).Any())
+                        {
+                            Directory.Delete(categoryPath);
+                            LogAction($"Removed empty folder: {category}");
+                        }
                     }
-                }
+                });
             }
             catch (Exception ex)
             {
@@ -464,7 +432,7 @@ namespace DownloadsFolderOrganizer
                     if (logLabel != null)
                     {
                         string timestamped = $"[{DateTime.Now:HH:mm:ss}] {message}";
-                        
+
                         if (string.IsNullOrEmpty(logLabel.Text) || logLabel.Text == ">> Ready to organize...")
                         {
                             logLabel.Text = timestamped;
@@ -494,7 +462,7 @@ namespace DownloadsFolderOrganizer
             });
         }
 
-        private async void OnClearLogClicked(object sender, EventArgs e)
+        private void OnClearLogClicked(object sender, EventArgs e)
         {
             if (logLabel != null)
             {
@@ -502,6 +470,7 @@ namespace DownloadsFolderOrganizer
             }
         }
 
+        // CS1998: Changed from async string to string as it has no awaitable operations.
         private string GetDefaultDownloadsPath()
         {
             try
@@ -521,8 +490,10 @@ namespace DownloadsFolderOrganizer
         {
             try
             {
+                // Permission check removed as it's implied or handled differently on Windows.
+
                 string downloadsPath = GetDefaultDownloadsPath();
-                
+
                 if (!string.IsNullOrEmpty(downloadsPath) && Directory.Exists(downloadsPath))
                 {
                     selectedFolderPath = downloadsPath;

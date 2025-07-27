@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36310.24 d17.14
+VisualStudioVersion = 17.14.36310.24
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadsFolderOrganizer", "DownloadsFolderOrganizer.csproj", "{2ECD0807-B830-46E5-841F-EF033B3B5FAE}"
 EndProject
@@ -15,7 +15,6 @@ Global
 		{2ECD0807-B830-46E5-841F-EF033B3B5FAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2ECD0807-B830-46E5-841F-EF033B3B5FAE}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{2ECD0807-B830-46E5-841F-EF033B3B5FAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2ECD0807-B830-46E5-841F-EF033B3B5FAE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2ECD0807-B830-46E5-841F-EF033B3B5FAE}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
