@@ -31,7 +31,7 @@ Whether you're a developer, student, or just tired of chaos — this tool saves 
 
 | Application UI | Before Organized | After Organized | 
 |-------------|-------------|---------------|
-![Application UI](./screenshot/ui.png)| ![Before](./screenshots/before.png) | ![After](./screenshots/after.png) |
+![Application UI](./Resources/Images/ui.png)| ![Before](./Resources/Images/before.png) | ![After](./Resources/Images/after.png) |
 
 ---
 
