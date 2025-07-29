@@ -1,71 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<!-- Target framework for the application -->
+		<!-- Core Project Settings -->
 		<TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
-		<!-- Output type as a Windows Executable (no console window) -->
 		<OutputType>WinExe</OutputType>
-		<!-- Enables MAUI framework -->
-		<UseMaui>true</UseMaui>
-		<!-- Specifies an unpackaged app (standalone executable) -->
-		<WindowsPackageType>None</WindowsPackageType>
-
-		<PublishSingleFile>true</PublishSingleFile>
-
-		<SelfContained>true</SelfContained>
-		<RuntimeIdentifier>win10-x64</RuntimeIdentifier>
-		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-
-		<!-- Application's root namespace -->
 		<RootNamespace>DownloadFolderOrganizer</RootNamespace>
-		<!-- Indicates that this is a single project for multiple platforms -->
+		<UseMaui>true</UseMaui>
 		<SingleProject>true</SingleProject>
-		<!-- Enables implicit using directives -->
 		<ImplicitUsings>enable</ImplicitUsings>
-		<!-- Enables nullable reference types -->
 		<Nullable>enable</Nullable>
-		<!-- Specifies the runtime identifier for the build -->
-		<RuntimeIdentifiers>win10-x64</RuntimeIdentifiers>
-		<RuntimeIdentifier>win10-x64</RuntimeIdentifier>
 
-		<!-- Display name for the application -->
+		<!-- Application Info -->
 		<ApplicationTitle>Downloads Folder Organizer</ApplicationTitle>
-
-		<!-- Unique application identifier -->
 		<ApplicationId>com.yourcompany.downloadsfolderorganizer</ApplicationId>
-
-		<!-- Application versioning -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
+		<AssemblyName>DownloadFolderOrganizer</AssemblyName>
+		<Authors>BonyKoshy</Authors>
 
-		<!-- Android specific version code -->
-		<AndroidVersionCode>1</AndroidVersionCode>
+		<!-- Windows Specific Publish Settings for an UNPACKAGED FOLDER -->
+		<WindowsPackageType>None</WindowsPackageType>
+		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+		<RuntimeIdentifier>win10-x64</RuntimeIdentifier>
 
-		<!-- Supported OS platform versions for Windows -->
+		<!-- Other Windows Settings -->
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-
-		<!-- Properties for MSIX packaging (mostly disabled for unpackaged app) -->
-		<GenerateAppInstallerFile>False</GenerateAppInstallerFile>
-		<AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-		<AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
-		<AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
-		<AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
-		<GenerateTestArtifacts>True</GenerateTestArtifacts>
-		<HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-
-		<!-- Assembly name -->
-		<AssemblyName>DownloadFolderOrganizer</AssemblyName>
-
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<!-- Additional target frameworks for Windows -->
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
-		<!-- Author information -->
-		<Authors>BonyKoshy</Authors>
-		<!-- Certificate thumbprint for signing -->
-		<PackageCertificateThumbprint>D9388AE7143D3FB5163DD8A6B2BA6A87584738F8</PackageCertificateThumbprint>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -86,7 +46,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- NuGet package references -->
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
